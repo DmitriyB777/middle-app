@@ -16,6 +16,18 @@ def create_app():
     # config
     app.config.from_object(Config)
 
+    missing = []
+    if not app.config.get("SQLALCHEMY_DATABASE_URI"):
+        missing.append("SQLALCHEMY_DATABASE_URI (set DATABASE_URL or DB_PASSWORD)")
+    if not app.config.get("JWT_SECRET_KEY"):
+        missing.append("JWT_SECRET_KEY")
+    if missing:
+        raise RuntimeError(
+            f"Missing required configuration: {', '.join(missing)}. "
+            "Set these variables in the environment or in .env "
+            "(see .env.example)."
+        )
+
     # init db
     db.init_app(app)
 
