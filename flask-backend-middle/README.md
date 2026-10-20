@@ -1,42 +1,29 @@
 # 🚀 flask-backend-middle
 
-Инструкция по развертыванию и запуску проекта
+REST API на Flask для работы с иерархией регионов и городов. Аутентификация — JWT, база данных — PostgreSQL, миграции — Alembic (Flask-Migrate).
 
-### 📦 Установка зависимостей
+Стек: Python 3.14, Flask 3, Flask-SQLAlchemy, Flask-JWT-Extended, PostgreSQL, pytest, ruff.
 
-Проект использует пакетный менеджер uv. Виртуальное окружение и зависимости устанавливаются одной командой:
+## 🧰 Требования
+
+- Python 3.14+ и пакетный менеджер [uv](https://docs.astral.sh/uv/).
+- Docker с Compose v2 — для базы данных и запуска в контейнерах. В WSL включите интеграцию Docker Desktop (Settings → Resources → WSL Integration).
+
+## 📦 Установка зависимостей
 
 ```
     uv sync
 ```
 
-### 🐘 Настройка базы данных PostgreSQL
+## 🔐 Переменные окружения
 
-Создайте пользовательскую сеть Docker с подсетью (достаточно выполнить один раз):
-
-```
-    docker network create --subnet=172.18.0.0/16 flask-backend-middle-net
-```
-
-Запустите контейнер PostgreSQL с постоянным IP-адресом:
-
-```
-    docker run --name flask-backend-middle --network flask-backend-middle-net --ip 172.18.0.10 -p 5432:5432 -e POSTGRES_PASSWORD=root -e POSTGRES_DB="flask-backend-middle-db" -d postgres
-```
-
-База данных flask-backend-middle-db создается автоматически при первом запуске контейнера благодаря переменной POSTGRES_DB, поэтому создавать базу данных вручную не нужно.
-
-Контейнер всегда получает один и тот же адрес 172.18.0.10 в сети flask-backend-middle-net. Статический IP работает только в пользовательской сети — во встроенной сети bridge ключ --ip не поддерживается. Для подключения с хоста по-прежнему используется 127.0.0.1:5432 (проброс порта -p), так как на Windows и macOS контейнерный IP не маршрутизируется напрямую.
-
-### 🔐 Переменные окружения
-
-Скопируйте пример конфигурации и заполните значения:
+Скопируйте пример и заполните значения:
 
 ```
     cp .env.example .env
 ```
 
-Приложение читает настройки из переменных окружения; `.env` — локальные значения по умолчанию, а переменные реального окружения имеют приоритет над `.env`.
+Приложение читает настройки из переменных окружения. `.env` — локальные значения по умолчанию, переменные реального окружения имеют приоритет над файлом.
 
 - `DATABASE_URL` — полная строка подключения PostgreSQL (необязательно; если задана, переменные `DB_*` игнорируются).
 - `DB_USER` — пользователь БД (по умолчанию `postgres`).
@@ -52,21 +39,11 @@
     python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-`.env` не коммитится в репозиторий, а `.env.example` содержит только плейсхолдеры. В production переменные должен передавать runtime (systemd `EnvironmentFile=`, Docker `-e` и т.п.). Если обязательные переменные не заданы, приложение завершается с понятной `RuntimeError`, указывающей на `.env` / `.env.example`. Секрет `JWT_SECRET_KEY` из истории git следует считать скомпрометированным и заменить в production.
+`.env` не коммитится, а `.env.example` содержит только плейсхолдеры. В production переменные передаёт runtime (systemd `EnvironmentFile=`, Docker `-e` и т.п.). Если обязательные переменные не заданы, приложение завершается с `RuntimeError` с указанием на `.env` / `.env.example`. Секрет `JWT_SECRET_KEY` из истории git считайте скомпрометированным и замените в production.
 
-### 🐳 Docker Compose
+## 🐳 Docker Compose
 
-Для запуска нужны Docker Engine/Desktop с Compose v2; в WSL включите интеграцию Docker Desktop (Settings → Resources → WSL integration).
-
-Compose подставляет значения из `.env`. Если файла нет, создайте его из примера:
-
-```
-    cp .env.example .env
-```
-
-`DB_PASSWORD` и `JWT_SECRET_KEY` обязательны: без них Compose завершится с ошибкой `Set DB_PASSWORD in .env` / `Set JWT_SECRET_KEY in .env`.
-
-**Запуск** (foreground и в фоне), **логи**, **остановка**:
+`compose.yaml` поднимает PostgreSQL и приложение под gunicorn. Значения `DB_PASSWORD` и `JWT_SECRET_KEY` Compose берёт из `.env` (см. раздел выше); без них запуск завершится ошибкой.
 
 ```
     docker compose up --build
@@ -77,84 +54,63 @@ Compose подставляет значения из `.env`. Если файла
 
 ⚠️ `docker compose down -v` удаляет volume `postgres_data` вместе с данными БД.
 
-**Что запускается:**
+Что запускается:
 
-- `db` — PostgreSQL 17 (`postgres:17-alpine`), volume `postgres_data`, порт `127.0.0.1:5432`, healthcheck.
-- `app` — образ из `Dockerfile`, gunicorn 4 gthread-воркера на порту 8000; перед стартом выполняется `flask db upgrade`, `DB_HOST` принудительно равен `db`.
+- `db` — PostgreSQL 17, volume `postgres_data`, порт `127.0.0.1:5432`, healthcheck.
+- `app` — образ из `Dockerfile`, gunicorn на порту 8000; перед стартом автоматически выполняется `flask db upgrade`, внутри сети `DB_HOST=db`.
 
-**Режим только БД:** поднимите `db`, а gunicorn запускайте на хосте — `.env` с `DB_HOST=127.0.0.1` работает, так как порт опубликован:
+Нужна только БД для локальной разработки — поднимите `db`, а приложение запускайте на хосте: `.env` с `DB_HOST=127.0.0.1` работает, потому что порт опубликован.
 
 ```
     docker compose up -d db
 ```
 
-**Миграции вручную** внутри контейнера:
+Применить миграции вручную в запущенном контейнере:
 
 ```
     docker compose exec app flask db upgrade
 ```
 
-**Проверка, что приложение поднялось:**
+Секреты не попадают в образ: `.env` исключён в `.dockerignore`.
 
-```
-    curl -i http://127.0.0.1:8000/api/regions
-```
+## ⚙️ Локальный запуск
 
-Ожидаемый ответ — HTTP 401 с `authorization_token`. Секреты не попадают в образ (`.env` исключён в `.dockerignore`); если порты 8000/5432 заняты, измените `ports` в `compose.yaml`.
-
-### ⚙️ Миграции и запуск
-
-Примените последние миграции базы данных:
+Примените миграции:
 
 ```
     uv run flask db upgrade
 ```
 
-**Обычный запуск**
-
-```
-    uv run flask --app main.py run
-```
-
-**Запуск в режиме отладки (Debug mode)**
+Запуск dev-сервера:
 
 ```
     uv run flask --app main.py run --debug
 ```
 
-### 🚀 Запуск через gunicorn (production)
+Без debug:
 
-gunicorn — production WSGI-сервер; зависимость уже добавлена в проект (`uv add gunicorn`), при установке с нуля выполните эту команду.
+```
+    uv run flask --app main.py run
+```
 
-**Основной запуск**
+## 🚀 Запуск через gunicorn (production)
 
 ```
     uv run gunicorn main:app --bind 0.0.0.0:8000 --workers 4 --worker-class gthread --threads 4 --timeout 60 --access-logfile - --error-logfile -
 ```
 
-Флаги:
-
-- `--workers` — число воркеров, ориентир 2 * CPU + 1 (каждый воркер — отдельный процесс).
+- `--workers` — число воркеров, ориентир `2 * CPU + 1`; каждый воркер — отдельный процесс.
 - `--worker-class gthread --threads 4` — многопоточные воркеры для I/O-нагрузки (запросы к PostgreSQL).
-- `--timeout` — таймаут воркера в секундах (60).
+- `--timeout` — таймаут воркера в секундах.
 - `--access-logfile -` и `--error-logfile -` — логи в stdout/stderr.
-- `--preload` не использовать: пул соединений SQLAlchemy/psycopg2 создается до форка и ломается в дочерних процессах.
 
-**Проверка, что приложение поднялось**
-
-```
-    curl -i http://127.0.0.1:8000/api/regions
-```
-
-Ожидаемый ответ — HTTP 401 с JSON `{"error":"authorization_token",...}`: эндпоинт защищён JWT, поэтому 401 подтверждает успешный старт.
-
-**Запуск в фоне (для сервера)**
+Фоновый запуск на сервере:
 
 ```
     setsid nohup uv run gunicorn main:app --bind 0.0.0.0:8000 --workers 4 --worker-class gthread --threads 4 --timeout 60 --access-logfile - --error-logfile - --pid /tmp/flask-backend-middle-gunicorn.pid > /tmp/flask-backend-middle-gunicorn.log 2>&1 &
 ```
 
-Просмотр лога, остановка и graceful reload:
+Логи, остановка и graceful reload:
 
 ```
     tail -f /tmp/flask-backend-middle-gunicorn.log
@@ -162,58 +118,36 @@ gunicorn — production WSGI-сервер; зависимость уже доб�
     kill -HUP $(cat /tmp/flask-backend-middle-gunicorn.pid)
 ```
 
-⚠️ gunicorn не поддерживается на Windows: в PowerShell используйте waitress (`uv add waitress`, затем `uv run waitress-serve --listen=0.0.0.0:8000 main:app`), а в WSL/Linux — gunicorn.
+## ✅ Проверка приложения
 
-⚠️ Перед запуском БД должна быть доступна и миграции применены (`uv run flask db upgrade`), иначе эндпоинты с БД вернут 500.
+```
+    curl -i http://127.0.0.1:8000/api/regions
+```
 
-### 🧪 Тесты
+Эндпоинт защищён JWT, поэтому корректный ответ при запущенном приложении — HTTP 401 с JSON `{"error":"authorization_token",...}`. Это подтверждает, что приложение поднялось. Ответы 500 на эндпоинтах с БД означают, что база недоступна или не применены миграции.
 
-Запустите весь набор тестов:
+## 🧪 Тесты
 
 ```
     uv run pytest
-```
-
-Отдельные уровни тестов (по маркерам):
-
-```
     uv run pytest -m unit
     uv run pytest -m integration
     uv run pytest -m e2e
-```
-
-Проверка покрытия кода:
-
-```
     uv run pytest --cov=app --cov-report=term-missing
 ```
 
-### 🧹 Линтер и форматирование (ruff)
-
-Проверить код линтером:
+## 🧹 Линтер и форматирование (ruff)
 
 ```
-    uv run ruff check .
+    uv run ruff check .           # проверить код
+    uv run ruff check --fix .     # исправить найденные проблемы
+    uv run ruff format .          # отформатировать
+    uv run ruff format --check .  # проверить форматирование без изменений
 ```
 
-Автоматически исправить найденные проблемы:
+## 🩺 Troubleshooting
 
-```
-    uv run ruff check --fix .
-```
-
-Отформатировать код:
-
-```
-    uv run ruff format .
-```
-
-Проверить форматирование без изменений:
-
-```
-    uv run ruff format --check .
-```
-
----
-
-⚠️ _Убедитесь, что Docker запущен перед выполнением команд по настройке базы данных._
+- `RuntimeError: Missing required configuration` — не создан `.env` или не заполнены `DB_PASSWORD` / `JWT_SECRET_KEY`: `cp .env.example .env` и заполните значения.
+- `500` на эндпоинтах с БД, `psycopg2.OperationalError ... Connection refused` — не запущена БД или не применены миграции: `docker compose up -d db`, затем `uv run flask db upgrade`.
+- `bind: address already in use` — порт 8000 (или 5432) занят, например локальным gunicorn: остановите процесс или измените `ports` в `compose.yaml`.
+- `uv run flask` использует системный Flask вместо venv — выполните `.venv/bin/python -m flask ...` или пересоздайте окружение: `rm -rf .venv && uv sync`.
