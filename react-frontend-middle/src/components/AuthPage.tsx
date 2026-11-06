@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import {
   clearError,
@@ -39,7 +39,7 @@ export const AuthPage = () => {
     dispatch(clearError())
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (isLoading) {

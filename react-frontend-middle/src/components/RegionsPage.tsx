@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { getErrorMessage } from '../api/client'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import {
@@ -79,7 +79,7 @@ export const RegionsPage = () => {
     [editingId, regions],
   )
 
-  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
+  const handleCreate = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (isBusy) {
@@ -124,7 +124,7 @@ export const RegionsPage = () => {
   }
 
   const handleSaveEdit = async (
-    event: FormEvent<HTMLFormElement>,
+    event: SubmitEvent<HTMLFormElement>,
     regionId: number,
   ) => {
     event.preventDefault()
