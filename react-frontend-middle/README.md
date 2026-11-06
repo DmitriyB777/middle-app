@@ -59,7 +59,8 @@ uv run flask --app main.py run --debug --port 8000
 `VITE_API_PROXY_TARGET` (см. ниже).
 
 Альтернатива — весь стек в Docker Compose из корня репозитория (`..`):
-поднимаются PostgreSQL, backend и frontend.
+поднимаются PostgreSQL, backend и frontend. Фронтенд в этом случае доступен по
+HTTPS на https://localhost, а HTTP на порту 80 перенаправляет на HTTPS.
 
 ```bash
 cd ..
@@ -88,8 +89,17 @@ npm run lint     # oxlint
 ## Запуск в Docker
 
 Многостадийный `Dockerfile` собирает приложение на `node:24-alpine` и раздаёт
-готовые файлы из `dist/` через `nginx:1.29-alpine`. В Compose сервис `frontend` публикуется
-на http://localhost:5173 и проксирует `/api` на `app:8000` (см. `nginx.conf`).
+готовые файлы из `dist/` через `nginx:1.29-alpine`. В Compose сервис `frontend`
+публикуется на стандартных портах **80** и **443**: приложение открывается по
+HTTPS на https://localhost, а HTTP на порту 80 перенаправляет на HTTPS (кроме
+`GET /healthz` для healthcheck контейнера). Запросы `/api` проксируются на
+`app:8000` (см. `nginx.conf`).
+
+При старте контейнера самоподписанный сертификат для разработки генерируется
+автоматически в `/etc/nginx/certs/{fullchain,privkey}.pem`. Браузер покажет
+предупреждение о сертификате — его нужно принять для локального использования.
+Для настоящих сертификатов смонтируйте `fullchain.pem` и `privkey.pem` в
+`/etc/nginx/certs`; скрипт обнаружит их и пропустит генерацию.
 
 Запуск из корня репозитория:
 
@@ -155,7 +165,9 @@ src/
 ```
 
 Сборка и запуск в контейнере: `Dockerfile` (multi-stage: node build + nginx
-runtime), `nginx.conf` (раздача `dist/` и прокси `/api`), `.dockerignore`.
+runtime), `nginx.conf` (раздача `dist/` и прокси `/api`),
+`docker-entrypoint.d/10-generate-self-signed-cert.sh` (генерация dev-сертификата
+при старте, если сертификаты не смонтированы), `.dockerignore`.
 
 Поток данных: компонент → `dispatch(thunk)` → `apiRequest()` → Redux slice →
 типизированный селектор → UI. API-клиент не импортирует store, чтобы не было
@@ -205,9 +217,12 @@ runtime), `nginx.conf` (раздача `dist/` и прокси `/api`), `.docker
 `Dockerfile` с многостадийной сборкой (`node:24-alpine` собирает приложение,
 `nginx:1.29-alpine` раздаёт статику) и `nginx.conf`: файлы из `dist/` попадают в
 `/usr/share/nginx/html`, а `/api` проксируется на backend (`http://app:8000`
-в сети Compose).
+в сети Compose). В Compose фронтенд работает по HTTPS на стандартных портах
+80/443: HTTP на порту 80 перенаправляет на HTTPS, а https://localhost открывает
+приложение. Для production не полагайтесь на самоподписанный dev-сертификат —
+смонтируйте настоящие `fullchain.pem` и `privkey.pem` в `/etc/nginx/certs`.
 
-Контейнеризованный запуск из корня репозитория — только фронтенд:
+Контейнеризованный запуск из корня репозитория: `docker compose up --build frontend` запускает сервис `frontend` вместе с его зависимостями Compose (`app` и `db`), а не только фронтенд (полный стек запускается командой `docker compose up --build`):
 
 ```bash
 docker compose up --build frontend

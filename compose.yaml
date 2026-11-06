@@ -50,13 +50,16 @@ services:
 
   frontend:
     # React frontend image is built from the react-frontend-middle subdirectory.
-    # It is served by nginx on http://localhost:5173 and proxies /api to app:8000,
-    # so no environment variables are needed here (the app uses relative /api).
+    # Served by nginx over HTTPS at https://localhost (HTTP on port 80 redirects
+    # to HTTPS) and proxies /api to app:8000. A self-signed development
+    # certificate is generated at container startup; mount real certs at
+    # /etc/nginx/certs.
     build:
       context: ./react-frontend-middle
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "80:80"
+      - "443:443"
     depends_on:
       app:
         condition: service_healthy

@@ -43,7 +43,7 @@ REST API на Flask для работы с иерархией регионов �
 
 ## 🐳 Docker Compose
 
-`compose.yaml` находится в корне репозитория — на уровень выше этого каталога. Compose поднимает PostgreSQL, Flask-приложение под gunicorn и React-фронтенд, который раздаётся через nginx. Значения `DB_USER`, `DB_PASSWORD`, `DB_NAME` и `JWT_SECRET_KEY` Compose берёт из `.env` в корне репозитория, а не из `flask-backend-middle/.env`; без обязательных переменных запуск завершится ошибкой.
+`compose.yaml` находится в корне репозитория — на уровень выше этого каталога. Compose поднимает PostgreSQL, Flask-приложение под gunicorn и React-фронтенд, который раздаётся через nginx. Фронтенд доступен по HTTPS на https://localhost (стандартный порт 443), а HTTP на порту 80 перенаправляет на HTTPS. Значения `DB_USER`, `DB_PASSWORD`, `DB_NAME` и `JWT_SECRET_KEY` Compose берёт из `.env` в корне репозитория, а не из `flask-backend-middle/.env`; без обязательных переменных запуск завершится ошибкой.
 
 Все команды выполняются из корня репозитория:
 
@@ -64,7 +64,7 @@ REST API на Flask для работы с иерархией регионов �
 
 - `db` — PostgreSQL 17, volume `postgres_data`, порт `127.0.0.1:5432`, healthcheck.
 - `app` — собирается из `./flask-backend-middle`, gunicorn на порту 8000; перед стартом автоматически выполняется `flask db upgrade`, внутри сети `DB_HOST=db`, есть healthcheck.
-- `frontend` — собирается из `./react-frontend-middle`, статика React раздаётся через nginx на http://localhost:5173 (порт контейнера 80), а `/api` проксируется на `http://app:8000`; запускается после того, как `app` станет healthy.
+- `frontend` — собирается из `./react-frontend-middle`, статика React раздаётся через nginx на стандартных портах 80/443; HTTPS — https://localhost, HTTP на порту 80 перенаправляет на HTTPS (кроме `GET /healthz` для healthcheck контейнера). Самоподписанный dev-сертификат генерируется при старте (настоящие сертификаты можно смонтировать в `/etc/nginx/certs`), а `/api` проксируется на `http://app:8000`; запускается после того, как `app` станет healthy.
 
 Нужна только БД для локальной разработки — поднимите `db` из корня репозитория, а приложение запускайте на хосте: `.env` в этом каталоге с `DB_HOST=127.0.0.1` работает, потому что порт опубликован.
 
@@ -156,5 +156,5 @@ REST API на Flask для работы с иерархией регионов �
 
 - `RuntimeError: Missing required configuration` — не создан `.env` или не заполнены `DB_PASSWORD` / `JWT_SECRET_KEY`: для локального запуска `cp .env.example .env` в этом каталоге, для Compose — в корне репозитория; заполните значения.
 - `500` на эндпоинтах с БД, `psycopg2.OperationalError ... Connection refused` — не запущена БД или не применены миграции: из корня репозитория `docker compose up -d db`, затем в этом каталоге `uv run flask db upgrade`.
-- `bind: address already in use` — порт 8000 (или 5432) занят, например локальным gunicorn: остановите процесс или измените `ports` в корневом `compose.yaml`.
+- `bind: address already in use` — занят один из публикуемых портов: 80/443 (frontend), 8000 (backend) или 5432 (DB). Остановите конфликтующий процесс (например, локальный gunicorn или nginx) либо измените `ports` в корневом `compose.yaml`.
 - `uv run flask` использует системный Flask вместо venv — выполните `.venv/bin/python -m flask ...` или пересоздайте окружение: `rm -rf .venv && uv sync`.
