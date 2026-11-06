@@ -22,11 +22,11 @@ import { RegionTree } from './RegionTree'
 import type { RegionTreeRowProps } from './RegionTree'
 import { EmptyState, ErrorState, LoadingState } from './StatusMessage'
 
-function parentOptionLabel(name: string, depth: number): string {
+const parentOptionLabel = (name: string, depth: number): string => {
   return depth > 0 ? `${'— '.repeat(depth)}${name}` : name
 }
 
-export function RegionsPage() {
+export const RegionsPage = () => {
   const dispatch = useAppDispatch()
 
   const regions = useAppSelector(selectRegions)

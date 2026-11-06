@@ -26,11 +26,11 @@ import {
 import type { City } from '../types/api'
 import { EmptyState, ErrorState, LoadingState } from './StatusMessage'
 
-function regionOptionLabel(name: string, depth: number): string {
+const regionOptionLabel = (name: string, depth: number): string => {
   return depth > 0 ? `${'— '.repeat(depth)}${name}` : name
 }
 
-export function CitiesPage() {
+export const CitiesPage = () => {
   const dispatch = useAppDispatch()
 
   const cities = useAppSelector(selectCities)

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export function LoadingState({ text = 'Загрузка…' }: { text?: string }) {
+export const LoadingState = ({ text = 'Загрузка…' }: { text?: string }) => {
   return (
     <div className="status-block" role="status" aria-live="polite">
       <span className="spinner" aria-hidden="true" />
@@ -9,13 +9,13 @@ export function LoadingState({ text = 'Загрузка…' }: { text?: string }
   )
 }
 
-export function ErrorState({
+export const ErrorState = ({
   message,
   onRetry,
 }: {
   message: string
   onRetry?: () => void
-}) {
+}) => {
   return (
     <div className="status-block status-block-error" role="alert">
       <span>{message}</span>
@@ -28,13 +28,13 @@ export function ErrorState({
   )
 }
 
-export function EmptyState({
+export const EmptyState = ({
   title,
   children,
 }: {
   title: string
   children?: ReactNode
-}) {
+}) => {
   return (
     <div className="empty-state">
       <strong>{title}</strong>

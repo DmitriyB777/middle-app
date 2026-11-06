@@ -56,20 +56,20 @@ export interface RequestOptions {
 let unauthorizedHandler: (() => void) | null = null
 let refreshInFlight: Promise<string> | null = null
 
-export function setUnauthorizedHandler(handler: (() => void) | null): void {
+export const setUnauthorizedHandler = (handler: (() => void) | null): void => {
   unauthorizedHandler = handler
 }
 
-function notifyUnauthorized(): void {
+const notifyUnauthorized = (): void => {
   unauthorizedHandler?.()
 }
 
-function invalidateSession(): void {
+const invalidateSession = (): void => {
   clearSession()
   notifyUnauthorized()
 }
 
-function extractMessage(body: unknown): string | null {
+const extractMessage = (body: unknown): string | null => {
   if (typeof body === 'string' && body.trim()) {
     return body.trim()
   }
@@ -87,11 +87,11 @@ function extractMessage(body: unknown): string | null {
   return null
 }
 
-function translateMessage(message: string): string {
+const translateMessage = (message: string): string => {
   return MESSAGE_TRANSLATIONS[message] ?? message
 }
 
-function buildErrorMessage(body: unknown, status: number): string {
+const buildErrorMessage = (body: unknown, status: number): string => {
   const extracted = extractMessage(body)
   if (!extracted) {
     return `HTTP ${status}`
@@ -100,7 +100,7 @@ function buildErrorMessage(body: unknown, status: number): string {
   return translateMessage(extracted)
 }
 
-async function parseResponseBody(response: Response): Promise<unknown> {
+const parseResponseBody = async (response: Response): Promise<unknown> => {
   const text = await response.text()
   if (!text) {
     return null
@@ -113,7 +113,7 @@ async function parseResponseBody(response: Response): Promise<unknown> {
   }
 }
 
-async function createApiError(response: Response): Promise<ApiError> {
+const createApiError = async (response: Response): Promise<ApiError> => {
   const body = await parseResponseBody(response)
   return new ApiError(
     response.status,
@@ -122,12 +122,12 @@ async function createApiError(response: Response): Promise<ApiError> {
   )
 }
 
-async function performFetch(
+const performFetch = async (
   path: string,
   method: string,
   body: unknown,
   accessToken: string | null,
-): Promise<Response> {
+): Promise<Response> => {
   const headers: Record<string, string> = { Accept: 'application/json' }
 
   if (body !== undefined) {
@@ -149,7 +149,7 @@ async function performFetch(
   }
 }
 
-async function performRefresh(): Promise<string> {
+const performRefresh = async (): Promise<string> => {
   const refreshToken = getRefreshToken()
 
   if (!refreshToken) {
@@ -204,7 +204,7 @@ async function performRefresh(): Promise<string> {
   return accessToken
 }
 
-function refreshAccessToken(): Promise<string> {
+const refreshAccessToken = (): Promise<string> => {
   if (!refreshInFlight) {
     refreshInFlight = performRefresh().finally(() => {
       refreshInFlight = null
@@ -214,10 +214,10 @@ function refreshAccessToken(): Promise<string> {
   return refreshInFlight
 }
 
-export async function apiRequest<T = unknown>(
+export const apiRequest = async <T = unknown>(
   path: string,
   options: RequestOptions = {},
-): Promise<T> {
+): Promise<T> => {
   const method = options.method ?? 'GET'
   const requiresAuth = options.auth ?? true
   const skipRefresh =
@@ -251,7 +251,7 @@ export async function apiRequest<T = unknown>(
   return body as T
 }
 
-export function getErrorMessage(error: unknown): string {
+export const getErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
     return error.message
   }

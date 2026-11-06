@@ -8,7 +8,7 @@ export interface StoredSession {
   username: string | null
 }
 
-function getStorage(): Storage | null {
+const getStorage = (): Storage | null => {
   if (typeof window === 'undefined') {
     return null
   }
@@ -20,7 +20,7 @@ function getStorage(): Storage | null {
   }
 }
 
-function readValue(key: string): string | null {
+const readValue = (key: string): string | null => {
   try {
     return getStorage()?.getItem(key) ?? null
   } catch {
@@ -28,7 +28,7 @@ function readValue(key: string): string | null {
   }
 }
 
-function writeValue(key: string, value: string): void {
+const writeValue = (key: string, value: string): void => {
   try {
     getStorage()?.setItem(key, value)
   } catch {
@@ -36,7 +36,7 @@ function writeValue(key: string, value: string): void {
   }
 }
 
-function removeValue(key: string): void {
+const removeValue = (key: string): void => {
   try {
     getStorage()?.removeItem(key)
   } catch {
@@ -44,19 +44,19 @@ function removeValue(key: string): void {
   }
 }
 
-export function getAccessToken(): string | null {
+export const getAccessToken = (): string | null => {
   return readValue(ACCESS_TOKEN_KEY)
 }
 
-export function getRefreshToken(): string | null {
+export const getRefreshToken = (): string | null => {
   return readValue(REFRESH_TOKEN_KEY)
 }
 
-export function getUsername(): string | null {
+export const getUsername = (): string | null => {
   return readValue(USERNAME_KEY)
 }
 
-export function loadSession(): StoredSession {
+export const loadSession = (): StoredSession => {
   return {
     accessToken: getAccessToken(),
     refreshToken: getRefreshToken(),
@@ -64,7 +64,7 @@ export function loadSession(): StoredSession {
   }
 }
 
-export function saveSession(session: StoredSession): void {
+export const saveSession = (session: StoredSession): void => {
   if (session.accessToken) {
     writeValue(ACCESS_TOKEN_KEY, session.accessToken)
   } else {
@@ -84,11 +84,11 @@ export function saveSession(session: StoredSession): void {
   }
 }
 
-export function saveAccessToken(accessToken: string): void {
+export const saveAccessToken = (accessToken: string): void => {
   writeValue(ACCESS_TOKEN_KEY, accessToken)
 }
 
-export function clearSession(): void {
+export const clearSession = (): void => {
   removeValue(ACCESS_TOKEN_KEY)
   removeValue(REFRESH_TOKEN_KEY)
   removeValue(USERNAME_KEY)

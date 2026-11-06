@@ -16,7 +16,7 @@ interface RegionTreeProps {
   renderRow: (props: RegionTreeRowProps) => ReactNode
 }
 
-export function RegionTree({ nodes, renderRow }: RegionTreeProps) {
+export const RegionTree = ({ nodes, renderRow }: RegionTreeProps) => {
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
     () => new Set<number>(),
   )

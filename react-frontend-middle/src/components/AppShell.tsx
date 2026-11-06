@@ -10,7 +10,7 @@ import { RegionsPage } from './RegionsPage'
 
 type DashboardTab = 'regions' | 'cities'
 
-export function AppShell() {
+export const AppShell = () => {
   const dispatch = useAppDispatch()
   const username = useAppSelector(selectUsername)
   const authStatus = useAppSelector(selectAuthStatus)

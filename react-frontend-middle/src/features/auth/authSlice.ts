@@ -21,7 +21,7 @@ interface AuthState {
   error: string | null
 }
 
-function createInitialState(): AuthState {
+const createInitialState = (): AuthState => {
   const session = loadSession()
 
   return {
@@ -96,14 +96,14 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    sessionExpired(state) {
+    sessionExpired: (state) => {
       state.accessToken = null
       state.refreshToken = null
       state.username = null
       state.status = 'idle'
       state.error = 'Сессия истекла. Войдите снова.'
     },
-    clearError(state) {
+    clearError: (state) => {
       state.error = null
     },
   },

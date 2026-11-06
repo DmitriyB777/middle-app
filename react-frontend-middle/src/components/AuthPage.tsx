@@ -14,7 +14,7 @@ type AuthMode = 'login' | 'register'
 const proxyTarget =
   import.meta.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000'
 
-export function AuthPage() {
+export const AuthPage = () => {
   const dispatch = useAppDispatch()
   const status = useAppSelector(selectAuthStatus)
   const storeError = useAppSelector(selectAuthError)

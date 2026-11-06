@@ -10,7 +10,7 @@ export interface FlatRegionOption {
   depth: number
 }
 
-export function buildRegionForest(regions: Region[]): RegionTreeNode[] {
+export const buildRegionForest = (regions: Region[]): RegionTreeNode[] => {
   const byId = new Map<number, Region>()
   for (const region of regions) {
     byId.set(region.id, region)
@@ -65,9 +65,9 @@ export function buildRegionForest(regions: Region[]): RegionTreeNode[] {
   return forest
 }
 
-export function flattenRegionForest(
+export const flattenRegionForest = (
   forest: RegionTreeNode[],
-): FlatRegionOption[] {
+): FlatRegionOption[] => {
   const result: FlatRegionOption[] = []
 
   const walk = (nodes: RegionTreeNode[], depth: number): void => {
@@ -81,10 +81,10 @@ export function flattenRegionForest(
   return result
 }
 
-export function collectRegionAndDescendantIds(
+export const collectRegionAndDescendantIds = (
   regionId: number,
   regions: Region[],
-): Set<number> {
+): Set<number> => {
   const childrenByParent = new Map<number, number[]>()
 
   for (const region of regions) {

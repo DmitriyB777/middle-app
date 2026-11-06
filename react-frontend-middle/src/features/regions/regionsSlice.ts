@@ -92,7 +92,7 @@ export const deleteRegion = createAsyncThunk<
   }
 })
 
-function resetState(state: RegionsState): void {
+const resetState = (state: RegionsState): void => {
   state.items = []
   state.status = 'idle'
   state.mutationStatus = 'idle'
@@ -104,7 +104,7 @@ const regionsSlice = createSlice({
   name: 'regions',
   initialState,
   reducers: {
-    clearMutationError(state) {
+    clearMutationError: (state) => {
       state.mutationError = null
     },
   },

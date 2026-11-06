@@ -48,7 +48,7 @@ export const fetchCities = createAsyncThunk<
   }
 })
 
-function isEmptyRegionDetailsResponse(error: unknown): boolean {
+const isEmptyRegionDetailsResponse = (error: unknown): boolean => {
   if (!(error instanceof ApiError) || error.status !== 404) {
     return false
   }
@@ -88,10 +88,10 @@ type CitiesThunkDispatch = ThunkDispatch<
   UnknownAction
 >
 
-async function refreshCitiesAndDetails(
+const refreshCitiesAndDetails = async (
   dispatch: CitiesThunkDispatch,
   getState: () => { cities: CitiesState },
-): Promise<void> {
+): Promise<void> => {
   await dispatch(fetchCities())
 
   const detailsRegionId = getState().cities.detailsRegionId
@@ -153,7 +153,7 @@ export const deleteCity = createAsyncThunk<
   }
 })
 
-function resetState(state: CitiesState): void {
+const resetState = (state: CitiesState): void => {
   state.items = []
   state.status = 'idle'
   state.mutationStatus = 'idle'
@@ -169,7 +169,7 @@ const citiesSlice = createSlice({
   name: 'cities',
   initialState,
   reducers: {
-    clearMutationError(state) {
+    clearMutationError: (state) => {
       state.mutationError = null
     },
   },
