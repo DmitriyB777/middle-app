@@ -43,29 +43,36 @@ REST API на Flask для работы с иерархией регионов �
 
 ## 🐳 Docker Compose
 
-`compose.yaml` поднимает PostgreSQL и приложение под gunicorn. Значения `DB_PASSWORD` и `JWT_SECRET_KEY` Compose берёт из `.env` (см. раздел выше); без них запуск завершится ошибкой.
+`compose.yaml` находится в корне репозитория — на уровень выше этого каталога. Compose поднимает PostgreSQL, Flask-приложение под gunicorn и React-фронтенд, который раздаётся через nginx. Значения `DB_USER`, `DB_PASSWORD`, `DB_NAME` и `JWT_SECRET_KEY` Compose берёт из `.env` в корне репозитория, а не из `flask-backend-middle/.env`; без обязательных переменных запуск завершится ошибкой.
+
+Все команды выполняются из корня репозитория:
 
 ```
+    cp .env.example .env
+    # заполните DB_PASSWORD и JWT_SECRET_KEY
     docker compose up --build
     docker compose up --build -d
     docker compose logs -f app
     docker compose down
 ```
 
+Если в `flask-backend-middle/.env` уже есть локальные значения, их можно перенести в корень: `cp flask-backend-middle/.env .env`.
+
 ⚠️ `docker compose down -v` удаляет volume `postgres_data` вместе с данными БД.
 
 Что запускается:
 
 - `db` — PostgreSQL 17, volume `postgres_data`, порт `127.0.0.1:5432`, healthcheck.
-- `app` — образ из `Dockerfile`, gunicorn на порту 8000; перед стартом автоматически выполняется `flask db upgrade`, внутри сети `DB_HOST=db`.
+- `app` — собирается из `./flask-backend-middle`, gunicorn на порту 8000; перед стартом автоматически выполняется `flask db upgrade`, внутри сети `DB_HOST=db`, есть healthcheck.
+- `frontend` — собирается из `./react-frontend-middle`, статика React раздаётся через nginx на http://localhost:5173 (порт контейнера 80), а `/api` проксируется на `http://app:8000`; запускается после того, как `app` станет healthy.
 
-Нужна только БД для локальной разработки — поднимите `db`, а приложение запускайте на хосте: `.env` с `DB_HOST=127.0.0.1` работает, потому что порт опубликован.
+Нужна только БД для локальной разработки — поднимите `db` из корня репозитория, а приложение запускайте на хосте: `.env` в этом каталоге с `DB_HOST=127.0.0.1` работает, потому что порт опубликован.
 
 ```
     docker compose up -d db
 ```
 
-Применить миграции вручную в запущенном контейнере:
+Применить миграции вручную в запущенном контейнере (из корня репозитория):
 
 ```
     docker compose exec app flask db upgrade
@@ -147,7 +154,7 @@ REST API на Flask для работы с иерархией регионов �
 
 ## 🩺 Troubleshooting
 
-- `RuntimeError: Missing required configuration` — не создан `.env` или не заполнены `DB_PASSWORD` / `JWT_SECRET_KEY`: `cp .env.example .env` и заполните значения.
-- `500` на эндпоинтах с БД, `psycopg2.OperationalError ... Connection refused` — не запущена БД или не применены миграции: `docker compose up -d db`, затем `uv run flask db upgrade`.
-- `bind: address already in use` — порт 8000 (или 5432) занят, например локальным gunicorn: остановите процесс или измените `ports` в `compose.yaml`.
+- `RuntimeError: Missing required configuration` — не создан `.env` или не заполнены `DB_PASSWORD` / `JWT_SECRET_KEY`: для локального запуска `cp .env.example .env` в этом каталоге, для Compose — в корне репозитория; заполните значения.
+- `500` на эндпоинтах с БД, `psycopg2.OperationalError ... Connection refused` — не запущена БД или не применены миграции: из корня репозитория `docker compose up -d db`, затем в этом каталоге `uv run flask db upgrade`.
+- `bind: address already in use` — порт 8000 (или 5432) занят, например локальным gunicorn: остановите процесс или измените `ports` в корневом `compose.yaml`.
 - `uv run flask` использует системный Flask вместо venv — выполните `.venv/bin/python -m flask ...` или пересоздайте окружение: `rm -rf .venv && uv sync`.

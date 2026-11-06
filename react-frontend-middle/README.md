@@ -58,11 +58,11 @@ uv run flask --app main.py run --debug --port 8000
 `--port 8000` (как выше), либо задайте другой адрес через
 `VITE_API_PROXY_TARGET` (см. ниже).
 
-Альтернатива — gunicorn в Docker Compose из backend-репозитория: приложение там
-уже публикуется на порту `8000`.
+Альтернатива — весь стек в Docker Compose из корня репозитория (`..`):
+поднимаются PostgreSQL, backend и frontend.
 
 ```bash
-cd ../flask-backend-middle
+cd ..
 docker compose up --build
 ```
 
@@ -84,6 +84,21 @@ npm run build    # tsc -b + vite build, результат в dist/
 npm run preview  # локальный просмотр production-сборки
 npm run lint     # oxlint
 ```
+
+## Запуск в Docker
+
+Многостадийный `Dockerfile` собирает приложение на `node:24-alpine` и раздаёт
+готовые файлы из `dist/` через `nginx:1.29-alpine`. В Compose сервис `frontend` публикуется
+на http://localhost:5173 и проксирует `/api` на `app:8000` (см. `nginx.conf`).
+
+Запуск из корня репозитория:
+
+```bash
+docker compose up --build
+```
+
+Перед запуском скопируйте `.env.example` в `.env` в корне репозитория и задайте
+`DB_PASSWORD` и `JWT_SECRET_KEY`.
 
 ## Прокси и `VITE_API_PROXY_TARGET`
 
@@ -139,6 +154,9 @@ src/
   index.css
 ```
 
+Сборка и запуск в контейнере: `Dockerfile` (multi-stage: node build + nginx
+runtime), `nginx.conf` (раздача `dist/` и прокси `/api`), `.dockerignore`.
+
 Поток данных: компонент → `dispatch(thunk)` → `apiRequest()` → Redux slice →
 типизированный селектор → UI. API-клиент не импортирует store, чтобы не было
 циклических зависимостей: store после создания регистрирует обработчик через
@@ -183,10 +201,27 @@ src/
 
 ## Production
 
-`npm run build` создаёт статические файлы в `dist/`. Для production отдавайте
-`dist/` через reverse proxy (nginx, Caddy, Traefik и т.п.) и проксируйте `/api`
-на Flask-приложение. В этом случае фронтенд и API находятся на одном origin, и
-CORS не нужен.
+`npm run build` создаёт статические файлы в `dist/`. В репозитории есть
+`Dockerfile` с многостадийной сборкой (`node:24-alpine` собирает приложение,
+`nginx:1.29-alpine` раздаёт статику) и `nginx.conf`: файлы из `dist/` попадают в
+`/usr/share/nginx/html`, а `/api` проксируется на backend (`http://app:8000`
+в сети Compose).
+
+Контейнеризованный запуск из корня репозитория — только фронтенд:
+
+```bash
+docker compose up --build frontend
+```
+
+или весь стек:
+
+```bash
+docker compose up --build
+```
+
+Без Docker для production отдавайте `dist/` через reverse proxy (nginx, Caddy,
+Traefik и т.п.) и проксируйте `/api` на Flask-приложение. В этом случае фронтенд
+и API находятся на одном origin, и CORS не нужен.
 
 Если статику и API разносить на разные origin, потребуется включить и настроить
 CORS на стороне Flask, а базовый путь API в клиенте (`src/api/client.ts`) нужно

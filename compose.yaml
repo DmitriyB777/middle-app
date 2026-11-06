@@ -1,4 +1,4 @@
-name: flask-backend-middle
+name: middle-app
 
 services:
   db:
@@ -21,7 +21,9 @@ services:
       retries: 10
 
   app:
-    build: .
+    # Flask backend image is built from the flask-backend-middle subdirectory.
+    build:
+      context: ./flask-backend-middle
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -46,5 +48,21 @@ services:
       retries: 5
       start_period: 10s
 
+  frontend:
+    # React frontend image is built from the react-frontend-middle subdirectory.
+    # It is served by nginx on http://localhost:5173 and proxies /api to app:8000,
+    # so no environment variables are needed here (the app uses relative /api).
+    build:
+      context: ./react-frontend-middle
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      app:
+        condition: service_healthy
+
 volumes:
   postgres_data:
+    # Explicit name keeps the existing database data after the Compose project
+    # name changed from flask-backend-middle to middle-app.
+    name: flask-backend-middle_postgres_data
