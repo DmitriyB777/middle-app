@@ -65,6 +65,46 @@ npm run dev
 
 Vite поднимает dev-сервер на http://localhost:5173.
 
+## Production из Docker Hub
+
+`compose.yaml` — это локальная конфигурация сборки: `docker compose up --build`
+собирает образы `app` и `frontend` на машине, и они остаются локальными, никуда
+не публикуются.
+
+`compose.prod.yaml` — оверлей, который только задаёт `image:` для `app` и
+`frontend`. Вместе с базовым `compose.yaml` он позволяет на сервере скачивать
+готовые образы из Docker Hub вместо сборки, сохраняя `db`, переменные
+окружения, порты, healthcheck и volume из базового файла.
+
+Сборка и публикация образов (из корня репозитория):
+
+```bash
+docker login
+docker compose build
+docker tag middle-app-app dmitriyb777/middle-app-backend:1.0.0
+docker tag middle-app-frontend dmitriyb777/middle-app-frontend:1.0.0
+docker push dmitriyb777/middle-app-backend:1.0.0
+docker push dmitriyb777/middle-app-frontend:1.0.0
+```
+
+`middle-app-app` и `middle-app-frontend` — стандартные локальные имена образов
+Compose. Если они отличаются, посмотрите актуальные имена в `docker compose images`.
+
+Запуск на сервере (из корня репозитория, где лежит `.env`):
+
+```bash
+docker login
+docker compose -f compose.yaml -f compose.prod.yaml pull
+docker compose -f compose.yaml -f compose.prod.yaml up -d --no-build
+```
+
+На сервере должен существовать `.env` с секретами (`DB_PASSWORD`,
+`JWT_SECRET_KEY`), как и для локального запуска. `compose.prod.yaml` не влияет
+на обычный локальный `docker compose up --build`.
+
+Для каждого релиза поднимайте тег (например, `1.0.1`) и обновляйте его в
+`compose.prod.yaml`, затем повторяйте `pull` и `up -d --no-build` на сервере.
+
 ## HTTPS
 
 Самоподписанный сертификат для разработки генерируется автоматически при старте

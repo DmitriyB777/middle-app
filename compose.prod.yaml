@@ -1,0 +1,14 @@
+# Production overlay: pull prebuilt images from Docker Hub instead of building.
+# Use together with the base file:
+#   docker compose -f compose.yaml -f compose.prod.yaml pull
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d --no-build
+#
+# Bump the image tags for each release and keep them in sync here.
+# The base compose.yaml remains the local build config (docker compose up --build).
+
+services:
+  app:
+    image: dmitriyb777/middle-app-backend:1.0.0
+
+  frontend:
+    image: dmitriyb777/middle-app-frontend:1.0.0

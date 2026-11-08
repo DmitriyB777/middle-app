@@ -80,6 +80,19 @@ REST API на Flask для работы с иерархией регионов �
 
 Секреты не попадают в образ: `.env` исключён в `.dockerignore`.
 
+### Production из Docker Hub
+
+Локальный сценарий не меняется: `docker compose up --build` по-прежнему собирает
+образы из `./flask-backend-middle` и `./react-frontend-middle`. Для сервера, где
+образы берутся из Docker Hub, есть оверлей `compose.prod.yaml`: он задаёт
+`image:` для `app` и `frontend`, а остальное (БД, окружение, порты, healthcheck,
+volume) остаётся из `compose.yaml`. Команды выполняются из корня репозитория:
+
+```
+    docker compose -f compose.yaml -f compose.prod.yaml pull
+    docker compose -f compose.yaml -f compose.prod.yaml up -d --no-build
+```
+
 ## ⚙️ Локальный запуск
 
 Примените миграции:

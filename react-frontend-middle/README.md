@@ -236,6 +236,17 @@ docker compose up --build frontend
 docker compose up --build
 ```
 
+Для сервера с готовыми образами из Docker Hub используйте оверлей
+`compose.prod.yaml` из корня репозитория:
+
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml pull
+docker compose -f compose.yaml -f compose.prod.yaml up -d --no-build
+```
+
+`compose.prod.yaml` указывает `app`/`frontend` на заранее собранные образы
+Docker Hub, а `compose.yaml` остаётся конфигурацией локальной сборки.
+
 Без Docker для production отдавайте `dist/` через reverse proxy (nginx, Caddy,
 Traefik и т.п.) и проксируйте `/api` на Flask-приложение. В этом случае фронтенд
 и API находятся на одном origin, и CORS не нужен.
