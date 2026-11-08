@@ -183,7 +183,7 @@ runtime), `nginx.conf` (раздача `dist/` и прокси `/api`),
 | Регистрация | `POST /register` | при успехе автоматически выполняется `POST /login` |
 | Вход | `POST /login` | сохраняются `tokens.access`, `tokens.refresh`, `username` |
 | Обновление access | `GET /refresh` | заголовок `Authorization: Bearer <refresh>` |
-| Выход | `GET /logout` | best-effort; локальная сессия очищается всегда |
+| Выход | `GET /logout` | best-effort отзывает (blocklist) предъявленный JWT; клиент отправляет и access-, и refresh-токен, локальная сессия очищается всегда |
 | Список регионов | `GET /regions` | JWT access |
 | Создание региона | `POST /region` | тело `{ name, parent_id }`, `parent_id` может быть `null` |
 | Изменение региона | `PUT /region/:id` | всегда отправляются `name` и `parent_id` |
@@ -209,7 +209,9 @@ runtime), `nginx.conf` (раздача `dist/` и прокси `/api`),
 4. Refresh не выполняется для `/login`, `/register`, `/refresh` и `/logout`.
 5. Если refresh не удался, токены очищаются, store получает `sessionExpired()`,
    пользователь возвращается на экран входа с сообщением об истёкшей сессии.
-6. Выход всегда очищает локальную сессию, даже если backend недоступен.
+6. Выход best-effort отзывает оба токена: клиент отправляет access- и refresh-токен
+   на `/api/logout`, чтобы backend заблокировал (blocklist) их `jti`. Локальная
+   сессия очищается всегда, даже если backend недоступен.
 
 ## Production
 

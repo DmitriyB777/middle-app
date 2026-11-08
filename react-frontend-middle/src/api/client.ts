@@ -51,6 +51,8 @@ export interface RequestOptions {
   body?: unknown
   auth?: boolean
   skipRefresh?: boolean
+  /** Explicit bearer token for this request (e.g. revoking a refresh token). */
+  token?: string | null
 }
 
 let unauthorizedHandler: (() => void) | null = null
@@ -224,6 +226,9 @@ export const apiRequest = async <T = unknown>(
     options.skipRefresh === true || NO_REFRESH_PATHS.has(path)
 
   let accessToken = requiresAuth ? getAccessToken() : null
+  if (requiresAuth && options.token !== undefined) {
+    accessToken = options.token
+  }
   let response = await performFetch(path, method, options.body, accessToken)
 
   if (response.status === 401 && requiresAuth && !skipRefresh) {

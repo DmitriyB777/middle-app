@@ -3,6 +3,7 @@ import { apiRequest, getErrorMessage } from '../../api/client'
 import {
   clearSession,
   getAccessToken,
+  getRefreshToken,
   loadSession,
   saveSession,
 } from '../../api/tokenStorage'
@@ -77,20 +78,32 @@ export const register = createAsyncThunk<
   }
 })
 
-export const logout = createAsyncThunk<void, void>(
-  'auth/logout',
-  async () => {
-    try {
-      if (getAccessToken()) {
-        await apiRequest('/logout', { method: 'GET', skipRefresh: true })
-      }
-    } catch {
-      // Logout is best-effort: local session is cleared even when the API fails.
-    } finally {
-      clearSession()
+export const logout = createAsyncThunk<void, void>('auth/logout', async () => {
+  const revokeToken = async (token: string | null): Promise<void> => {
+    if (!token) {
+      return
     }
-  },
-)
+
+    try {
+      await apiRequest('/logout', {
+        method: 'GET',
+        skipRefresh: true,
+        token,
+      })
+    } catch {
+      // Logout is best-effort: revoke what we can and clear the local session.
+    }
+  }
+
+  try {
+    await Promise.all([
+      revokeToken(getAccessToken()),
+      revokeToken(getRefreshToken()),
+    ])
+  } finally {
+    clearSession()
+  }
+})
 
 const authSlice = createSlice({
   name: 'auth',
